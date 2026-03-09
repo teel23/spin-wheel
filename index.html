@@ -71,8 +71,8 @@
 
   canvas#wheelCanvas {
     position: absolute;
-    top: 14%; left: 14%;
-    width: 72%; height: 72%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     border-radius: 50%;
     filter: drop-shadow(0 0 28px rgba(240,192,64,0.18));
   }
@@ -87,7 +87,7 @@
 
   .pointer {
     position: absolute;
-    top: calc(14% - 16px);
+    top: -14px;
     left: 50%;
     transform: translateX(-50%);
     width: 0; height: 0;
@@ -309,10 +309,12 @@ const keepBtn   = document.getElementById('keepBtn');
 const removeBtn = document.getElementById('removeBtn');
 const warning   = document.getElementById('warning');
 
-// SVG coords: viewBox 420×420, wheel at top:14% left:14% w/h:72%
-// Wheel center: (210,210), wheel radius: 420*0.72/2 = 151.2
-const SVG_CX = 210, SVG_CY = 210, SVG_R = 151.2;
-const LABEL_R = SVG_R + 22;
+// Canvas draws at 760x760 internal resolution, filling the full container
+const SVG_SIZE = 420; // matches viewBox="0 0 420 420"
+const SVG_CX = SVG_SIZE / 2;   // 210
+const SVG_CY = SVG_SIZE / 2;   // 210
+const SVG_R  = SVG_SIZE / 2 - 8; // ~202, the actual wheel radius in SVG coords
+const LABEL_R = SVG_R * 0.65;    // labels sit at 65% of the radius = inside the colored slice
 
 function drawWheel(angle) {
   const W = canvas.width, H = canvas.height;
@@ -360,7 +362,7 @@ function drawLabels(angle) {
   clearLabels();
   if (!choices.length) return;
   const n = choices.length, slice = (Math.PI*2)/n;
-  const fontSize = Math.max(11, Math.min(20, Math.floor(300/n)));
+  const fontSize = Math.max(10, Math.min(18, Math.floor(260 / n)));
 
   // One shared defs block
   const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
@@ -393,7 +395,7 @@ function drawLabels(angle) {
     if (Math.cos(mid) < 0) rotation += 180;
     text.setAttribute('transform', `rotate(${rotation},${lx},${ly})`);
 
-    const maxChars = n <= 4 ? 14 : n <= 8 ? 10 : 7;
+    const maxChars = n <= 3 ? 16 : n <= 6 ? 12 : n <= 10 ? 8 : 6;
     const label = choices[i].name.length > maxChars
       ? choices[i].name.slice(0, maxChars-1) + '…'
       : choices[i].name;
@@ -443,55 +445,6 @@ function escHtml(s) {
 function showWarning(m) { warning.textContent = m; warning.style.display = 'block'; }
 function hideWarning()  { warning.style.display = 'none'; }
 
-function spin() {
-  if (spinning || choices.length < 2) {
-    if (choices.length < 2) showWarning('Add at least 2 choices to spin!'); return;
-  }
-  spinning = true; spinBtn.disabled = true;
-  resultBanner.classList.remove('active'); hideWarning();
-
-  const n = choices.length, slice = (Math.PI*2)/n;
-  const extraSpins = (6 + Math.random()*5) * Math.PI*2;
-  const winner = Math.floor(Math.random() * n);
-  let targetAngle = (-Math.PI/2) - (winner+0.5)*slice + extraSpins;
-  targetAngle += (Math.random()-0.5) * slice * 0.5;
-
-  const startAngle = currentAngle, totalDelta = targetAngle - startAngle;
-  const duration = 4200 + Math.random()*1400, start = performance.now();
-
-  function easeOut(t) { return 1 - Math.pow(1-t, 4); }
-
-  (function animate(now) {
-    const t = Math.min((now-start)/duration, 1);
-    currentAngle = startAngle + totalDelta * easeOut(t);
-    drawWheel(currentAngle);
-    if (t < 1) { requestAnimationFrame(animate); return; }
-    currentAngle = startAngle + totalDelta;
-    drawWheel(currentAngle);
-    spinning = false; spinBtn.disabled = false;
-    lastResult = choices[winner].name;
-    resultText.textContent = lastResult;
-    resultBanner.classList.add('active');
-  })(start);
-  requestAnimationFrame(t => {
-    const step = now => {
-      const prog = Math.min((now-start)/duration,1);
-      currentAngle = startAngle + totalDelta * easeOut(prog);
-      drawWheel(currentAngle);
-      if (prog < 1) { requestAnimationFrame(step); return; }
-      currentAngle = startAngle + totalDelta;
-      drawWheel(currentAngle);
-      spinning = false; spinBtn.disabled = false;
-      lastResult = choices[winner].name;
-      resultText.textContent = lastResult;
-      resultBanner.classList.add('active');
-    };
-    requestAnimationFrame(step);
-  });
-}
-
-// Fixed spin — clean version
-spinBtn.onclick = null;
 function doSpin() {
   if (spinning || choices.length < 2) {
     if (choices.length < 2) showWarning('Add at least 2 choices to spin!'); return;
