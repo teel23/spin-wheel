@@ -708,7 +708,34 @@ function removeChoice(name) {
   saveActiveWheel();
 }
 
+// ===== SESSION PERSISTENCE (choices survive refresh) =====
+function persistSession() {
+  try {
+    localStorage.setItem('spinSession', JSON.stringify({
+      activeWheelId,
+      choices: choices.map(c => c.name)
+    }));
+  } catch (e) { /* storage unavailable — ignore */ }
+}
+
+function restoreSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem('spinSession') || 'null');
+    if (!s) return;
+    if (s.activeWheelId && wheels.find(w => w.id === s.activeWheelId)) {
+      activeWheelId = s.activeWheelId;
+    }
+    if (Array.isArray(s.choices)) {
+      choices = s.choices
+        .filter(n => typeof n === 'string' && n.trim())
+        .slice(0, 20)
+        .map(name => ({ name }));
+    }
+  } catch (e) { /* corrupt data — start fresh */ }
+}
+
 function renderList() {
+  persistSession();
   countBadge.textContent = `${choices.length} / 20`;
   if (choices.length === 0) {
     choicesList.innerHTML = '<li class="empty-state">No choices yet — add some below!</li>';
@@ -1029,6 +1056,7 @@ function deleteWheel(id) {
 
 // ===== INIT =====
 loadWheels();
+restoreSession();
 renderSavedStrip();
 updateSaveBtn();
 renderList();

@@ -1,6 +1,6 @@
 # Spin to Decide — Project Notes
 > Reference for jumping back into this project.
-> Last updated: March 9, 2026
+> Last updated: July 8, 2026 (session persistence added)
 
 ---
 
@@ -59,5 +59,5 @@ Single-file app: `index.html` contains all HTML, CSS, and JS.
 ---
 
 ## Open Items
-- [ ] Future: save choices to localStorage so they persist on refresh
-- [ ] Confirm spin.c2tbuilds.com resolves in browser (CNAME `spin` → `cname.vercel-dns.com` set in Namecheap)
+- [x] Save choices to localStorage so they persist on refresh (July 8, 2026 — `spinSession` key)
+- [x] Confirm spin.c2tbuilds.com resolves in browser — confirmed live July 8, 2026
